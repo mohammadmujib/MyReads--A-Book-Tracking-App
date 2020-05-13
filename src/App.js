@@ -1,56 +1,47 @@
-import React, { Component } from 'react'
-import { Route } from 'react-router-dom'
-import * as BooksAPI from './BooksAPI'
-import './App.css'
-import ListBooks from './ListBooks'
-import SearchBooks from './SearchBooks'
+import React from "react";
+import * as BooksAPI from "./BooksAPI";
+import "./App.css";
+import { Route } from "react-router-dom";
+import BookList from "./components/BookList";
+import Search from "./components/Search";
 
-class App extends Component {
-    state = {
-        books: []
-    }
+class BooksApp extends React.Component {
+  state = { books: [] };
 
-    // Use async + await - a special syntax to work with promises in a more concise fashion - Udacity
-    async getBooks () {
-        const books = await BooksAPI.getAll();
-        this.setState({ books });
-    }
+  componentDidMount() {
+    BooksAPI.getAll().then(books => this.setState({ books }));
+  }
 
-    componentDidMount() {
-        // After the component is loaded, fetch the data.
-        this.getBooks();
-    }
+  changeShelf = (changedBook, shelf) => {
+    BooksAPI.update(changedBook, shelf).then(response => {
+      changedBook.shelf = shelf;
+      this.setState(prevState => ({
+        books: prevState.books
+          .filter(book => book.id !== changedBook.id)
+          .concat(changedBook)
+      }));
+    });
+  };
 
-    updateShelf = (book, shelf) => {
-        /*
-        First update in the remote server, Then fetch it
-        Alwasy use then in this format. If you use function.then(function), it won't work properly.
-        */
-        BooksAPI.update(book, shelf)
-        .then(() => {
-            this.getBooks();
-        });
-    };
-
-    render() {
-        return (
-            <div className="app">
-                <Route exact path='/' render={() => (
-                    <ListBooks
-                        books={this.state.books}
-                        onUpdateShelf={this.updateShelf}
-                    />
-                )} />
-
-                <Route path='/search' render={() => (
-                    <SearchBooks
-                        books={this.state.books}
-                        onUpdateShelf={this.updateShelf}
-                    />
-                )} />
-            </div>
-        );
-    }
+  render() {
+    const { books } = this.state;
+    console.log("book ", books);
+    return (
+      <div>
+        <Route
+          exact
+          path="/"
+          render={() => (
+            <BookList books={books} changeShelf={this.changeShelf} />
+          )}
+        />
+        <Route
+          path="/search"
+          render={() => <Search books={books} changeShelf={this.changeShelf} />}
+        />
+      </div>
+    );
+  }
 }
 
-export default App;
+export default BooksApp;
